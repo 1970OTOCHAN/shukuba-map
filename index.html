@@ -119,8 +119,8 @@
   <select id="jump"><option value="">宿場を選んで移動…</option></select>
   <label><input type="checkbox" id="onlyNot"> 未訪問だけ表示</label>
   <button id="kirokuBtn">記録の受け渡し</button>
-  <select id="kaido" aria-label="街道を選ぶ"><option value="./" selected>東海道五十三次</option><option value="nakasendo.html">中山道六十九次</option><option value="nikko.html">日光街道</option></select>
-  <span id="ver">Ver 1.4</span>
+  <select id="kaido" aria-label="街道を選ぶ"><option value="./" selected>東海道五十三次</option><option value="nakasendo.html">中山道六十九次</option><option value="nikko.html">日光街道</option><option value="oshu.html">奥州街道</option></select>
+  <span id="ver">Ver 1.5</span>
 </div>
 <div id="notice"><div class="msg">⚠ 訪問の印は、この機器のこのブラウザだけに保存されます。<br>スマホとパソコン、ブラウザが違うと別々の記録になります。</div><button id="noticeClose" aria-label="閉じる">✕</button></div>
 <div id="map"></div>
@@ -218,7 +218,7 @@ const KEY = "shukuba_tokaido_visited";
 let visited = new Set();
 try { visited = new Set(JSON.parse(localStorage.getItem(KEY) || "[]")); } catch(e) {}
 function saveVisited(){ try { localStorage.setItem(KEY, JSON.stringify([...visited])); } catch(e) {} }
-const LINKS = {0:[["shukuba_nakasendo_visited",0],["shukuba_nikko_visited",0]], 52:[["shukuba_nakasendo_visited",68]], 53:[["shukuba_nakasendo_visited",69]], 99:[["shukuba_nakasendo_visited",99]]};
+const LINKS = {0:[["shukuba_nakasendo_visited", 0],["shukuba_nikko_visited", 0],["shukuba_oshu_visited", 0]], 52:[["shukuba_nakasendo_visited", 68]], 53:[["shukuba_nakasendo_visited", 69]], 99:[["shukuba_nakasendo_visited", 99]]};
 // ---- ほかの街道と共通の宿場（片方で印を付けると、もう片方にも付く） ----
 // LINKS[この街道の番号] = [[ほかの街道の保存名, その街道での番号], ...]
 function readSet(k){ try { return new Set(JSON.parse(localStorage.getItem(k) || "[]")); } catch(e) { return new Set(); } }
