@@ -73,3 +73,8 @@
 - 道順の注意書きの最後に「Google マップは Google LLC の商標です。」
 - オープニングに「本アプリは自治体・観光団体などの公式アプリではありません。」
 - 「東海道五十三次」などの街道名は登録商標か確かめられていないので ® は付けない
+
+## アクセス数（Cloudflare Web Analytics）
+- 各ページの </body> の前に Cloudflare Web Analytics の1行（beacon.min.js、token e75f1ba2a4504431bdc7f3ccb9d2206a）を入れた。トークンはページに書く前提の公開の番号で、秘密の情報ではない
+- Cloudflare の Web Analytics に「1970otochan.github.io」を1つ登録してあり、宿場町巡礼マップ・巡礼マップ・城マップの3つの倉庫で同じトークンを使う（ページごとの数は Cloudflare の画面でアドレス別に見る）。集計はユーザー本人だけが見られる
+- 2026-11-13 に入れた（宿場町 Ver 1.9・巡礼 Ver 2.9・城 Ver 3.7）
