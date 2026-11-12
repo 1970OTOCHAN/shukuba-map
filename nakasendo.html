@@ -120,7 +120,7 @@
   <label><input type="checkbox" id="onlyNot"> 未訪問だけ表示</label>
   <button id="kirokuBtn">記録の受け渡し</button>
   <select id="kaido" aria-label="街道を選ぶ"><option value="./">東海道五十三次</option><option value="nakasendo.html" selected>中山道六十九次</option></select>
-  <span id="ver">Ver 1.1</span>
+  <span id="ver">Ver 1.2</span>
 </div>
 <div id="notice"><div class="msg">⚠ 訪問の印は、この機器のこのブラウザだけに保存されます。<br>スマホとパソコン、ブラウザが違うと別々の記録になります。</div><button id="noticeClose" aria-label="閉じる">✕</button></div>
 <div id="map"></div>
@@ -501,7 +501,7 @@ function alertBox(text){
   t.classList.add("show"); setTimeout(() => { t.classList.remove("show"); t.querySelector(".big").textContent = "踏破"; t.querySelector(".small").textContent = "中山道六十九次 すべての宿場を訪ねました"; }, 3000);
 }
 
-document.getElementById("kaido").onchange = e => { location.href = e.target.value + "?skip"; };
+document.getElementById("kaido").onchange = e => { location.href = e.target.value + "?skip&v=" + document.getElementById("ver").textContent.replace(/\D+/, "");  // バージョンの印を付けて、古い版を覚えていても新しい版が開くようにする };
 
 // ---- オープニング ----
 (function(){
