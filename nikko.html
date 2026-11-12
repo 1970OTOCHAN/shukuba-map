@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>宿場町巡礼マップ（日光街道）</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&display=swap" rel="stylesheet">
+<style>
+  :root { --shu:#b33a2a; --shu-dark:#86281c; --byakue:#faf7f0; --sumi:#2e2a26; }
+  html, body { margin:0; height:100%; font-family: "Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif; }
+  #bar { position:absolute; top:0; left:0; right:0; z-index:1000; display:flex; align-items:center; gap:10px;
+         flex-wrap:wrap; padding:8px 12px; background:var(--byakue); color:var(--sumi);
+         border-bottom:3px solid var(--shu); box-shadow:0 2px 6px rgba(0,0,0,.2); }
+  #bar h1 { font-size:18px; margin:0; font-weight:700; font-family:"Yuji Syuku",serif; }
+  #count { background:var(--shu); color:#fff; padding:3px 10px; border-radius:12px; font-size:14px; font-weight:700; }
+  #count.kechigan { background:#b8860b; }
+  #kiten { font-size:13px; color:var(--shu); font-weight:700; }
+  .pop .yomi { font-size:12px; color:#666; margin-left:4px; }
+  .pop .pt { font-size:12px; color:#555; margin-bottom:6px; }
+  #kaido { font-size:13px; color:var(--shu); border:1px solid var(--shu); border-radius:12px; padding:2px 6px; background:#fff; max-width:140px; }
+  #toHenro { font-size:13px; color:var(--shu); text-decoration:none; border:1px solid var(--shu); border-radius:12px; padding:2px 10px; background:#fff; }
+  .fuda.kiten { border-style:dashed; font-size:13px; }
+  #bar select, #bar label { font-size:14px; }
+  #bar select { padding:3px; max-width:230px; }
+  #map { position:absolute; top:51px; left:0; right:0; bottom:0; }
+  #kirokuBtn { background:#e0b23a; color:#3b2a10; border:none; border-radius:14px; padding:4px 12px; font-size:14px; font-weight:700; cursor:pointer; }
+  .fuda { width:28px; height:28px; border-radius:50%; background:#fff; border:2px solid var(--shu);
+          color:var(--shu); font-size:12px; font-weight:700; line-height:28px; text-align:center;
+          box-shadow:0 1px 3px rgba(0,0,0,.4); cursor:pointer; font-family:"Hiragino Sans","Meiryo",sans-serif; }
+  .fuda.visited { background:var(--shu); color:#fff; border-color:#fff; }
+  .pop { width:260px; }
+  .pop .no { color:var(--shu); font-size:13px; font-weight:700; }
+  .pop h2 { margin:0 0 2px; font-size:18px; font-family:"Yuji Syuku",serif; font-weight:400; }
+  .pop .pref { color:#666; font-size:13px; margin-bottom:6px; }
+  .pop .photo { width:260px; min-height:60px; background:#eee; display:flex; align-items:center; justify-content:center;
+                color:#888; font-size:13px; border-radius:4px; overflow:hidden; }
+  .pop .photo img { width:100%; display:block; }
+  .pop .credit { font-size:11px; color:#777; margin-top:3px; line-height:1.4; }
+  .pop button { margin-top:8px; width:100%; padding:9px; font-size:15px; border:2px solid var(--shu); border-radius:6px;
+                cursor:pointer; background:#fff; color:var(--shu); font-weight:700; }
+  .pop button.on { background:var(--shu); color:#fff; }
+  .pop a.nav { display:block; margin-top:8px; padding:9px; font-size:15px; font-weight:700; text-align:center; text-decoration:none;
+               border-radius:6px; background:#1a73e8; color:#fff; }
+  .pop .navnote { font-size:11px; color:#888; margin-top:4px; line-height:1.4; }
+  .maplibregl-popup-content { padding:10px; }
+  #notice { position:absolute; top:51px; left:0; right:0; z-index:999; display:flex; align-items:flex-start; gap:8px;
+            padding:8px 12px; background:#fff3d0; border-bottom:1px solid #e6c463; color:#7a5a12; font-size:13px; line-height:1.6; }
+  #notice .msg { flex:1; }
+  #notice button { background:none; border:none; color:#7a5a12; font-size:22px; line-height:1; cursor:pointer; padding:0 4px; }
+  .modal { position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; padding:12px; }
+  .modal.open { display:flex; }
+  .sheet { background:#fff; border-radius:12px; width:100%; max-width:400px; max-height:92vh; overflow:auto; padding:16px 18px; position:relative; color:var(--sumi); box-shadow:0 6px 24px rgba(0,0,0,.3); }
+  .sheet h2 { text-align:center; margin:0 0 10px; font-size:19px; font-family:"Yuji Syuku",serif; font-weight:400; }
+  .sheet h3 { font-size:15px; margin:12px 0 4px; }
+  .sheet .x { position:absolute; right:10px; top:6px; background:none; border:none; font-size:24px; color:#888; cursor:pointer; }
+  .sheet .sub { font-size:12px; color:#777; margin-bottom:6px; }
+  .sheet .row { display:flex; gap:6px; }
+  .sheet input[type=text] { flex:1; min-width:0; padding:8px; font-size:14px; border:1px solid #ccc; border-radius:6px; font-family:monospace; }
+  .sheet .btn { padding:8px 14px; font-size:15px; font-weight:700; border:none; border-radius:6px; cursor:pointer; background:var(--sumi); color:#fff; white-space:nowrap; }
+  .sheet .btn.red { background:var(--shu); width:100%; margin-top:8px; }
+  .sheet .btn.light { background:#eee; color:var(--sumi); }
+  .sheet .qr { display:flex; gap:10px; align-items:center; margin-top:10px; }
+  .sheet .qr #qrBox { width:120px; height:120px; flex:none; border:1px solid #ddd; }
+  .sheet .qr #qrBox img, .sheet .qr #qrBox svg { width:100%; height:100%; display:block; }
+  .sheet .qr p { font-size:12px; color:#555; margin:0; line-height:1.6; }
+  .sheet hr { border:none; border-top:1px solid #eee; margin:14px 0 4px; }
+  .sheet .note { font-size:12px; color:#666; margin-top:8px; line-height:1.6; }
+  .sheet .tip { font-size:12px; background:#fff3d0; border:1px solid #e6c463; color:#7a5a12; border-radius:6px; padding:8px 10px; margin-top:10px; line-height:1.6; }
+  .sheet .msg { font-size:13px; margin-top:6px; min-height:1em; }
+  .sheet .msg.ok { color:#1f7a3d; } .sheet .msg.ng { color:var(--shu); }
+  #ver { font-size:12px; color:#8a7f72; margin-left:auto; }
+  #toast { position:fixed; left:50%; top:40%; transform:translate(-50%,-50%) scale(.9); z-index:4000; opacity:0; pointer-events:none;
+           background:rgba(46,42,38,.92); color:#fff; padding:22px 34px; border-radius:14px; text-align:center;
+           transition:opacity .4s, transform .4s; font-family:"Yuji Syuku",serif; }
+  #toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
+  #toast .big { font-size:40px; color:#f2cf6b; }
+  #toast .small { font-size:15px; margin-top:6px; }
+  #opening { position:fixed; inset:0; z-index:5000; background:#1f2529; display:flex; flex-direction:column;
+             align-items:center; justify-content:center; cursor:pointer; transition:opacity .6s; text-align:center; padding:0 16px; }
+  #opening.out { opacity:0; pointer-events:none; }
+  #opening .a { opacity:0; transform:translateY(8px); transition:opacity .7s, transform .7s; }
+  #opening.go .a { opacity:1; transform:none; }
+  #opening.go .d2 { transition-delay:.5s; } #opening.go .d3 { transition-delay:.8s; } #opening.go .d4 { transition-delay:1.1s; }
+  #opening .logo { width:200px; height:200px; max-width:60vw; max-height:60vw; display:block; }
+  #opening .t1 { font-family:"Yuji Syuku",serif; color:#fff; font-size:30px; margin-top:18px; }
+  #opening .t2 { font-family:"Yuji Syuku",serif; color:#f2cf6b; font-size:17px; margin-top:8px; }
+  #opening .t3 { color:#b9c0c4; font-size:13px; margin-top:24px; }
+  #opening .t4 { color:#8f989d; font-size:13px; margin-top:10px; line-height:1.6; }
+</style>
+</head>
+<body>
+<div id="opening">
+  <div class="a d1"><svg class="logo" viewBox="0 0 120 120" aria-hidden="true">
+    <rect x="1" y="1" width="118" height="118" rx="24" fill="#faf7f0" stroke="#b33a2a" stroke-width="2"/>
+    <text x="60" y="20" text-anchor="middle" fill="#b33a2a" font-size="7.5" font-family="Georgia,serif" letter-spacing="0.5">NIKKO KAIDO 21 STATIONS</text>
+    <circle cx="60" cy="68" r="38" fill="#b33a2a"/>
+    <circle cx="60" cy="68" r="33" fill="none" stroke="#fff" stroke-width="2"/>
+    <path d="M36 80 L52 60 L60 68 L70 54 L86 80 Z" fill="#fff" opacity=".25"/>
+    <text x="60" y="64" text-anchor="middle" fill="#fff" font-size="13" font-family="serif">二十一宿</text>
+    <text x="60" y="84" text-anchor="middle" fill="#fff" font-size="12" font-family="serif">宿場巡り</text>
+    <path d="M98 92 c-6 0 -10 4 -10 9 c0 7 10 16 10 16 s10 -9 10 -16 c0 -5 -4 -9 -10 -9 z" fill="#c8372d" stroke="#faf7f0" stroke-width="2"/>
+    <circle cx="98" cy="101" r="3.5" fill="#faf7f0"/>
+  </svg></div>
+  <div class="a d2 t1">宿場町巡礼マップ</div>
+  <div class="a d3 t2">日光街道 ― 国土地理院の地図で、宿場町をめぐる</div>
+  <div class="a d4 t3">© 2026 1970 OTOCHAN. All rights reserved.</div>
+  <div class="a d4 t4">アプリそのものの無断での再配布・改変・販売はご遠慮ください。スクリーンショットやリンクでの紹介は自由です。</div>
+  <div class="a d4 t4">本アプリは自治体・観光団体などの公式アプリではありません。</div>
+</div>
+<div id="bar">
+  <h1>宿場町巡礼マップ 日光街道</h1>
+  <span id="count">宿場 0 / 21</span>
+  <span id="kiten">起点・終点 0 / 2</span>
+  <select id="jump"><option value="">宿場を選んで移動…</option></select>
+  <label><input type="checkbox" id="onlyNot"> 未訪問だけ表示</label>
+  <button id="kirokuBtn">記録の受け渡し</button>
+  <select id="kaido" aria-label="街道を選ぶ"><option value="./">東海道五十三次</option><option value="nakasendo.html">中山道六十九次</option><option value="nikko.html" selected>日光街道</option></select>
+  <span id="ver">Ver 1.4</span>
+</div>
+<div id="notice"><div class="msg">⚠ 訪問の印は、この機器のこのブラウザだけに保存されます。<br>スマホとパソコン、ブラウザが違うと別々の記録になります。</div><button id="noticeClose" aria-label="閉じる">✕</button></div>
+<div id="map"></div>
+<div class="modal" id="kiroku"><div class="sheet">
+  <button class="x" data-close aria-label="閉じる">✕</button>
+  <h2>記録の受け渡し</h2>
+  <h3>① 書き出す（この機器の記録を渡す）</h3>
+  <div class="sub" id="outInfo"></div>
+  <div class="row"><input type="text" id="outCode" readonly><button class="btn" id="copyBtn">コピー</button></div>
+  <div class="msg" id="copyMsg"></div>
+  <div class="qr"><div id="qrBox"></div><p>もう片方の機器のカメラでこのQRコードを読み取ると、アプリが開いて「読み込みますか？」と聞かれます。</p></div>
+  <hr>
+  <h3>② 読み込む（もらった記録を入れる）</h3>
+  <div class="row"><input type="text" id="inCode" placeholder="ここに書き出した文字を貼り付け"></div>
+  <button class="btn red" id="loadBtn">読み込む</button>
+  <div class="msg" id="loadMsg"></div>
+  <div class="note">今の印は消さずに、もらった印を足します。<br>（例：スマホに5か所、パソコンに3か所 → 両方の8か所になる）</div>
+  <div class="tip">そろえたいときは、両方の機器で書き出し→読み込みを1回ずつすると、どちらも同じ印になります。</div>
+  <div class="note" style="font-size:11px;color:#888">QRコードは株式会社デンソーウェーブの登録商標です。</div>
+</div></div>
+<div class="modal" id="ask"><div class="sheet">
+  <h2>記録の読み込み</h2>
+  <p id="askText" style="font-size:15px;line-height:1.7;margin:4px 0 10px;"></p>
+  <div class="row"><button class="btn red" id="askYes" style="margin-top:0">読み込む</button><button class="btn light" id="askNo">やめる</button></div>
+</div></div>
+<div id="toast"><div class="big">踏破</div><div class="small">日光街道 すべての宿場を訪ねました</div></div>
+
+<script>
+// [番号（0＝起点 日本橋、99＝終点 三条大橋）, 名前, 読み, 今の所在地, 緯度, 経度, 地図の印の場所, Wikipedia記事名]
+// 位置：Wikidata の各宿場の座標。幸手・中田・大沢・今市は Wikidata の座標が誤り・おおまかだったため国土地理院の住所検索（地名のあたり）。日光坊中は日光東照宮の位置
+// 9つ目：使う画像（記事の代表画像が地図などのときに指定）。"-" は画像なし
+const TEMPLES = [
+[0,"日本橋","にほんばし","東京都中央区",35.683611,139.774444,"日本橋","日本橋 (東京都中央区の橋)"],
+[1,"千住宿","せんじゅ","東京都足立区",35.75069,139.80231,"","千住宿"],
+[2,"草加宿","そうか","埼玉県草加市",35.83534,139.80647,"","草加宿","Soka Matsubara-4.jpg"],
+[3,"越ヶ谷宿","こしがや","埼玉県越谷市",35.89663,139.78311,"","越ヶ谷宿","Hiroshige - Koshigaya.jpg"],
+[4,"粕壁宿","かすかべ","埼玉県春日部市",35.98301,139.75349,"","粕壁宿"],
+[5,"杉戸宿","すぎと","埼玉県杉戸町",36.02687,139.73330,"","杉戸宿","-"],
+[6,"幸手宿","さって","埼玉県幸手市",36.074539,139.716705,"幸手市中のあたり","幸手宿"],
+[7,"栗橋宿","くりはし","埼玉県久喜市",36.14207,139.70248,"","栗橋宿"],
+[8,"中田宿","なかだ","茨城県古河市",36.144817,139.710968,"古河市中田のあたり","中田宿"],
+[9,"古河宿","こが","茨城県古河市",36.19650,139.70610,"","古河宿","-"],
+[10,"野木宿","のぎ","栃木県野木町",36.23325,139.74072,"","野木宿"],
+[11,"間々田宿","ままだ","栃木県小山市",36.26817,139.76806,"","間々田宿"],
+[12,"小山宿","おやま","栃木県小山市",36.31461,139.80017,"","小山宿","-"],
+[13,"新田宿","しんでん","栃木県小山市",36.35918,139.83081,"","新田宿"],
+[14,"小金井宿","こがねい","栃木県下野市",36.38718,139.84197,"","小金井宿"],
+[15,"石橋宿","いしばし","栃木県下野市",36.43650,139.86360,"","石橋宿"],
+[16,"雀宮宿","すずめのみや","栃木県宇都宮市",36.49380,139.87290,"","雀宮宿"],
+[17,"宇都宮宿","うつのみや","栃木県宇都宮市",36.56180,139.87720,"","宇都宮宿","-"],
+[18,"徳次郎宿","とくじら","栃木県宇都宮市",36.65053,139.84395,"","徳次郎宿","-"],
+[19,"大沢宿","おおさわ","栃木県日光市",36.696941,139.76207,"大沢町のあたり","大沢宿"],
+[20,"今市宿","いまいち","栃木県日光市",36.718483,139.698654,"今市本町のあたり","今市宿 (下野国)","-"],
+[21,"鉢石宿","はついし","栃木県日光市",36.75100,139.60800,"","鉢石宿"],
+[99,"日光坊中","にっこうぼうちゅう","栃木県日光市",36.7581,139.5989,"日光東照宮","日光東照宮"],
+];
+const isBangai = no => no === 0 || no === 99;
+const TOTAL = TEMPLES.filter(t => !isBangai(t[0])).length;   // 踏破は21宿（起点・終点は数えない）
+const label = no => no === 0 ? "起点" : no === 99 ? "終点（日光坊中）" : `第${no}宿`;
+const mark = no => no === 0 ? "起" : no === 99 ? "終" : no;
+
+// ---- 訪問記録（このブラウザに保存） ----
+const KEY = "shukuba_nikko_visited";
+let visited = new Set();
+try { visited = new Set(JSON.parse(localStorage.getItem(KEY) || "[]")); } catch(e) {}
+function saveVisited(){ try { localStorage.setItem(KEY, JSON.stringify([...visited])); } catch(e) {} }
+const LINKS = {0:[["shukuba_tokaido_visited",0],["shukuba_nakasendo_visited",0]]};
+// ---- ほかの街道と共通の宿場（片方で印を付けると、もう片方にも付く） ----
+// LINKS[この街道の番号] = [[ほかの街道の保存名, その街道での番号], ...]
+function readSet(k){ try { return new Set(JSON.parse(localStorage.getItem(k) || "[]")); } catch(e) { return new Set(); } }
+function writeSet(k, s){ try { localStorage.setItem(k, JSON.stringify([...s])); } catch(e) {} }
+function syncIn(){
+  let changed = false;
+  Object.entries(LINKS).forEach(([no, list]) => {
+    no = Number(no);
+    if (!visited.has(no) && list.some(([k, o]) => readSet(k).has(o))) { visited.add(no); changed = true; }
+  });
+  if (changed) saveVisited();
+}
+function syncOut(no, on){
+  (LINKS[no] || []).forEach(([k, o]) => { const s = readSet(k); on ? s.add(o) : s.delete(o); writeSet(k, s); });
+}
+syncIn();
+
+function mainCount(){ return [...visited].filter(no => !isBangai(no)).length; }
+function updateCount(){
+  const c = document.getElementById("count");
+  const main = mainCount(), done = main >= TOTAL;
+  c.textContent = done ? `踏破 ${main} / ${TOTAL}` : `宿場 ${main} / ${TOTAL}`;
+  c.classList.toggle("kechigan", done);
+  document.getElementById("kiten").textContent = `起点・終点 ${visited.size - main} / 2`;
+}
+function showKechigan(){
+  const t = document.getElementById("toast");
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 3500);
+}
+
+// ---- 地図（国土地理院 最適化ベクトルタイル） ----
+const pmProtocol = new pmtiles.Protocol();
+maplibregl.addProtocol("pmtiles", pmProtocol.tile);
+const START = [[139.5, 35.65], [139.95, 36.8]];        // 最初に見せる範囲（日本橋〜日光）
+const LIMIT   = [[133.0, 31.5], [142.5, 38.5]];           // これより外には動かせない（スマホの縦長画面でも全体が入る広さ）
+const map = new maplibregl.Map({
+  container: "map",
+  style: "https://gsi-cyberjapan.github.io/optimal_bvmap/style/std.json",
+  bounds: START, fitBoundsOptions: { padding: 10 }, maxBounds: LIMIT, maxZoom: 17.5,
+  dragRotate: false, pitchWithRotate: false, attributionControl: false
+});
+map.touchZoomRotate.disableRotation();
+map.addControl(new maplibregl.NavigationControl({ showCompass:false }), "top-left");
+map.addControl(new maplibregl.AttributionControl({ compact:false,
+  customAttribution: ['出典：<a href="https://github.com/gsi-cyberjapan/optimal_bvmap" target="_blank">国土地理院最適化ベクトルタイル</a>（一部を加工して表示）',
+    '© 2026 1970 OTOCHAN（アプリの無断での再配布・改変・販売はご遠慮ください／スクショ・リンクでの紹介は自由）'] }));
+map.on("load", () => {
+  map.getStyle().layers.forEach(l => {
+    if (["AdmBdry","Cntr"].includes(l["source-layer"])) map.setLayoutProperty(l.id, "visibility", "none");
+  });
+});
+
+function paintIcon(el, no){ el.classList.toggle("visited", visited.has(no)); }
+
+// ---- 写真（Wikipedia / ウィキメディア・コモンズ） ----
+const photoCache = {};
+const API = "https://ja.wikipedia.org/w/api.php?format=json&origin=*&action=query";
+function stripHtml(h){ const d = document.createElement("div"); d.innerHTML = h || ""; return d.textContent.trim(); }
+// file：使う画像を決めて指定するとき（記事の代表画像が地図などのとき）。"-" は画像なし
+async function getPhoto(title, file){
+  if (photoCache[title]) return photoCache[title];
+  const r1 = await fetch(`${API}&redirects=1&prop=pageimages&piprop=thumbnail|name&pithumbsize=640&titles=${encodeURIComponent(title)}`).then(r=>r.json());
+  const page = Object.values(r1.query.pages)[0];
+  const info = { pageUrl:`https://ja.wikipedia.org/wiki/${encodeURIComponent(page.title || title)}` };
+  if (file === "-") { page.thumbnail = null; }
+  else if (file) {
+    const rf = await fetch(`${API}&prop=imageinfo&iiprop=url&iiurlwidth=640&titles=${encodeURIComponent("File:" + file)}`).then(r=>r.json());
+    const pf = Object.values(rf.query.pages)[0];
+    page.thumbnail = pf.imageinfo ? { source: pf.imageinfo[0].thumburl } : null;
+    page.pageimage = file;
+  }
+  if (page.thumbnail) {
+    info.src = page.thumbnail.source;
+    try {
+      const r = await fetch(`${API}&prop=imageinfo&iiprop=extmetadata|url&titles=${encodeURIComponent("File:" + page.pageimage)}`).then(r=>r.json());
+      const ii = Object.values(r.query.pages)[0].imageinfo[0];
+      info.fileUrl = ii.descriptionurl;
+      info.artist = stripHtml(ii.extmetadata.Artist && ii.extmetadata.Artist.value);
+      info.license = stripHtml(ii.extmetadata.LicenseShortName && ii.extmetadata.LicenseShortName.value);
+    } catch(e) {}
+  }
+  photoCache[title] = info;
+  return info;
+}
+
+// ---- マーカー ----
+const markers = {};
+const jump = document.getElementById("jump");
+const groups = [["起点・終点", isBangai], ["宿場（第1宿〜第21宿）", no => !isBangai(no)]].map(([lb, test]) => {
+  const g = document.createElement("optgroup"); g.label = lb; jump.appendChild(g); return { test, g };
+});
+
+// 現在地からの道順（グーグルマップ）。出発地を空にすると現在地からになる
+// 行き先は地図の印の位置（緯度・経度）をそのまま渡す（宿場名は同じ名前の場所が多いため）
+function navUrl(lat, lng){
+  return "https://www.google.com/maps/dir/?api=1&destination=" + lat + "," + lng;
+}
+
+TEMPLES.forEach(([no, name, yomi, place, lat, lng, pt, wiki, file]) => {
+  const el = document.createElement("div");
+  el.className = "fuda";
+  el.textContent = mark(no); el.title = `${label(no)} ${name}`;
+  if (isBangai(no)) el.classList.add("kiten");
+  paintIcon(el, no);
+
+  const box = document.createElement("div");
+  box.className = "pop";
+  box.innerHTML = `<div class="no">${label(no)}</div><h2>${name}<span class="yomi">${yomi}</span></h2><div class="pref">${place}</div>
+    ${pt ? `<div class="pt">地図の印：${pt}</div>` : ""}
+    <div class="photo">画像を読み込み中…</div><div class="credit"></div><button></button>
+    <a class="nav" target="_blank" rel="noopener">現在地からの道順（グーグルマップ）</a>
+    <div class="navnote">道順はグーグルマップで表示します。グーグルマップの仕様変更などにより、行き先や道順が実際と異なる場合があります。運転中の操作はおやめください。Google マップは Google LLC の商標です。</div>`;
+  const btn = box.querySelector("button");
+  box.querySelector(".nav").href = navUrl(lat, lng);
+  function paintBtn(){
+    const v = visited.has(no);
+    btn.textContent = v ? "㊞ 訪問済み（タップで取り消し）" : "訪ねた印を付ける";
+    btn.className = v ? "on" : "";
+  }
+  btn.onclick = () => {
+    const before = mainCount();
+    visited.has(no) ? visited.delete(no) : visited.add(no);
+    syncOut(no, visited.has(no));
+    saveVisited(); updateCount(); paintBtn(); paintIcon(el, no); applyFilter();
+    if (before < TOTAL && mainCount() === TOTAL) showKechigan();
+  };
+  paintBtn();
+
+  const popup = new maplibregl.Popup({ maxWidth:"290px", offset:16 }).setDOMContent(box);
+  const m = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).setPopup(popup);
+
+  let loaded = false;
+  popup.on("open", async () => {
+    if (loaded) return; loaded = true;
+    const photo = box.querySelector(".photo"), credit = box.querySelector(".credit");
+    try {
+      const p = await getPhoto(wiki, file);
+      if (p.src) {
+        const img = new Image();
+        img.src = p.src; img.alt = name;
+        photo.innerHTML = ""; photo.appendChild(img);
+        const who = [p.artist, p.license].filter(Boolean).join(" / ");
+        credit.innerHTML = `画像：<a href="${p.fileUrl || p.pageUrl}" target="_blank">ウィキメディア・コモンズ</a>${who ? "（" + who.replace(/</g,"&lt;") + "）" : ""}
+          ・<a href="${p.pageUrl}" target="_blank">Wikipediaで詳しく</a>`;
+      } else {
+        photo.textContent = "画像が見つかりませんでした";
+        credit.innerHTML = `<a href="${p.pageUrl}" target="_blank">Wikipediaで見る</a>`;
+      }
+    } catch(e) {
+      loaded = false;
+      photo.textContent = "画像を読み込めませんでした（インターネット接続を確認してください）";
+    }
+  });
+
+  m.addTo(map);
+  markers[no] = { m, popup, shown: true, refresh(){ paintBtn(); paintIcon(el, no); } };
+  const opt = document.createElement("option");
+  opt.value = no; opt.textContent = `${isBangai(no) ? label(no) : no + "."} ${name}（${place.replace(/^.+?[都道府県]/,"")}）`;
+  groups.find(x => x.test(no)).g.appendChild(opt);
+});
+
+jump.onchange = () => {
+  const no = Number(jump.value); if (!no) return;
+  const k = markers[no];
+  if (!k.shown) { k.m.addTo(map); k.shown = true; }
+  map.flyTo({ center: k.m.getLngLat(), zoom: 15 });
+  if (!k.popup.isOpen()) k.m.togglePopup();
+};
+
+const onlyNot = document.getElementById("onlyNot");
+function applyFilter(){
+  TEMPLES.forEach(([no]) => {
+    const k = markers[no], hide = onlyNot.checked && visited.has(no);
+    if (hide && k.shown && !k.popup.isOpen()) { k.m.remove(); k.shown = false; }
+    if (!hide && !k.shown) { k.m.addTo(map); k.shown = true; }
+  });
+}
+onlyNot.onchange = applyFilter;
+updateCount();
+
+// ---- 帯・注意書き・地図の位置（帯が折り返して高くなっても隠れないように） ----
+const barEl = document.getElementById("bar"), noticeEl = document.getElementById("notice"), mapEl = document.getElementById("map");
+function layout(){
+  const h = barEl.offsetHeight;
+  let top = h;
+  if (noticeEl.isConnected) { noticeEl.style.top = h + "px"; top += noticeEl.offsetHeight; }
+  mapEl.style.top = top + "px";
+  map.resize();
+}
+layout();
+window.addEventListener("resize", layout);
+if (document.fonts) document.fonts.ready.then(layout);
+document.getElementById("noticeClose").onclick = () => { noticeEl.remove(); layout(); };
+map.once("load", () => { layout(); map.fitBounds(START, { padding: 10, animate: false }); });
+
+// ---- 記録の受け渡し（23か所の印を短い文字にして、別の機器へ渡す） ----
+const PAGE_URL = location.origin + location.pathname;
+// 並び順（日本橋＝0、第1〜21宿＝1〜21、日光坊中＝22）で1か所1ビット
+const ORDER = TEMPLES.map(t => t[0]);
+function encodeRecord(set){
+  const bytes = new Uint8Array(3);
+  set.forEach(no => { const i = ORDER.indexOf(no); if (i >= 0) bytes[i >> 3] |= 1 << (i & 7); });
+  return "K" + btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+function decodeRecord(text){
+  text = (text || "").trim();
+  const m = text.match(/[#&?]r=([A-Za-z0-9_-]+)/); if (m) text = m[1];
+  if (!/^K[A-Za-z0-9_-]{4}$/.test(text)) return null;
+  let bin; try { bin = atob(text.slice(1).replace(/-/g,"+").replace(/_/g,"/")); } catch(e) { return null; }
+  const set = new Set();
+  for (let i = 0; i < ORDER.length; i++) if (bin.charCodeAt(i >> 3) & (1 << (i & 7))) set.add(ORDER[i]);
+  return set;
+}
+function addRecord(set){
+  const before = visited.size, beforeMain = mainCount();
+  set.forEach(no => { visited.add(no); syncOut(no, true); });
+  saveVisited(); updateCount();
+  Object.values(markers).forEach(k => k.refresh());
+  applyFilter();
+  if (beforeMain < TOTAL && mainCount() === TOTAL) showKechigan();
+  return visited.size - before;
+}
+const kiroku = document.getElementById("kiroku");
+function openKiroku(){
+  const code = encodeRecord(visited);
+  document.getElementById("outCode").value = code;
+  document.getElementById("outInfo").textContent = `この機器の訪問記録が入っています（今：${visited.size}か所）`;
+  document.getElementById("copyMsg").textContent = "";
+  document.getElementById("loadMsg").textContent = ""; document.getElementById("inCode").value = "";
+  const box = document.getElementById("qrBox");
+  try { const qr = qrcode(0, "M"); qr.addData(PAGE_URL + "#r=" + code); qr.make(); box.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true }); }
+  catch(e) { box.textContent = "QRコードを作れませんでした"; }
+  kiroku.classList.add("open");
+}
+document.getElementById("kirokuBtn").onclick = openKiroku;
+kiroku.addEventListener("click", e => { if (e.target === kiroku || e.target.hasAttribute("data-close")) kiroku.classList.remove("open"); });
+document.getElementById("copyBtn").onclick = async () => {
+  const inp = document.getElementById("outCode"), msg = document.getElementById("copyMsg");
+  try { await navigator.clipboard.writeText(inp.value); }
+  catch(e) { inp.select(); try { document.execCommand("copy"); } catch(e2) {} }
+  msg.className = "msg ok"; msg.textContent = "コピーしました。LINEやメールで、もう片方の機器に送ってください。";
+};
+document.getElementById("loadBtn").onclick = () => {
+  const msg = document.getElementById("loadMsg"), set = decodeRecord(document.getElementById("inCode").value);
+  if (!set) { msg.className = "msg ng"; msg.textContent = "文字が正しくありません。書き出した文字をそのまま貼り付けてください。"; return; }
+  const added = addRecord(set);
+  msg.className = "msg ok"; msg.textContent = `読み込みました。新しく ${added}か所 の印が付きました（合計 ${visited.size}か所）。`;
+  document.getElementById("outCode").value = encodeRecord(visited);
+  document.getElementById("outInfo").textContent = `この機器の訪問記録が入っています（今：${visited.size}か所）`;
+};
+// QRコードやリンクから開いたとき（アドレスの最後が #r=…）
+function checkLink(){
+  const m = location.hash.match(/^#r=([A-Za-z0-9_-]+)$/); if (!m) return;
+  history.replaceState(null, "", location.pathname);
+  const set = decodeRecord(m[1]), ask = document.getElementById("ask"), txt = document.getElementById("askText");
+  if (!set) return;
+  const newOnes = [...set].filter(no => !visited.has(no)).length;
+  txt.innerHTML = `訪問 <b>${set.size}か所</b> の記録を読み込みますか？<br>（このうち、この機器でまだ印がないのは ${newOnes}か所です。今の印は消えません）`;
+  ask.classList.add("open");
+  document.getElementById("askNo").onclick = () => ask.classList.remove("open");
+  document.getElementById("askYes").onclick = () => {
+    const added = addRecord(set); ask.classList.remove("open");
+    alertBox(`読み込みました。新しく ${added}か所 の印が付きました。`);
+  };
+}
+checkLink();
+window.addEventListener("hashchange", checkLink);
+function alertBox(text){
+  const t = document.getElementById("toast");
+  t.querySelector(".big").textContent = "㊞"; t.querySelector(".small").textContent = text;
+  t.classList.add("show"); setTimeout(() => { t.classList.remove("show"); t.querySelector(".big").textContent = "踏破"; t.querySelector(".small").textContent = "日光街道 すべての宿場を訪ねました"; }, 3000);
+}
+
+// バージョンの印を付けて、古い版を覚えていても新しい版が開くようにする
+document.getElementById("kaido").onchange = e => { location.href = e.target.value + "?skip&v=" + document.getElementById("ver").textContent.replace(/\D+/, ""); };
+
+// ---- オープニング ----
+(function(){
+  const op = document.getElementById("opening");
+  if (new URLSearchParams(location.search).has("skip")) { op.remove(); history.replaceState(null, "", location.pathname); return; }
+  let closed = false;
+  function close(){ if (closed) return; closed = true; op.classList.add("out"); setTimeout(() => op.remove(), 700); }
+  setTimeout(() => op.classList.add("go"), 50);
+  setTimeout(close, 4100);
+  op.addEventListener("click", close);
+})();
+</script>
+</body>
+</html>

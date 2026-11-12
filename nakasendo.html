@@ -119,8 +119,8 @@
   <select id="jump"><option value="">宿場を選んで移動…</option></select>
   <label><input type="checkbox" id="onlyNot"> 未訪問だけ表示</label>
   <button id="kirokuBtn">記録の受け渡し</button>
-  <select id="kaido" aria-label="街道を選ぶ"><option value="./">東海道五十三次</option><option value="nakasendo.html" selected>中山道六十九次</option></select>
-  <span id="ver">Ver 1.3</span>
+  <select id="kaido" aria-label="街道を選ぶ"><option value="./">東海道五十三次</option><option value="nakasendo.html" selected>中山道六十九次</option><option value="nikko.html">日光街道</option></select>
+  <span id="ver">Ver 1.4</span>
 </div>
 <div id="notice"><div class="msg">⚠ 訪問の印は、この機器のこのブラウザだけに保存されます。<br>スマホとパソコン、ブラウザが違うと別々の記録になります。</div><button id="noticeClose" aria-label="閉じる">✕</button></div>
 <div id="map"></div>
@@ -234,7 +234,7 @@ const KEY = "shukuba_nakasendo_visited";
 let visited = new Set();
 try { visited = new Set(JSON.parse(localStorage.getItem(KEY) || "[]")); } catch(e) {}
 function saveVisited(){ try { localStorage.setItem(KEY, JSON.stringify([...visited])); } catch(e) {} }
-const LINKS = {0:[["shukuba_tokaido_visited",0]], 68:[["shukuba_tokaido_visited",52]], 69:[["shukuba_tokaido_visited",53]], 99:[["shukuba_tokaido_visited",99]]};
+const LINKS = {0:[["shukuba_tokaido_visited",0],["shukuba_nikko_visited",0]], 68:[["shukuba_tokaido_visited",52]], 69:[["shukuba_tokaido_visited",53]], 99:[["shukuba_tokaido_visited",99]]};
 // ---- ほかの街道と共通の宿場（片方で印を付けると、もう片方にも付く） ----
 // LINKS[この街道の番号] = [[ほかの街道の保存名, その街道での番号], ...]
 function readSet(k){ try { return new Set(JSON.parse(localStorage.getItem(k) || "[]")); } catch(e) { return new Set(); } }
@@ -294,11 +294,19 @@ function paintIcon(el, no){ el.classList.toggle("visited", visited.has(no)); }
 const photoCache = {};
 const API = "https://ja.wikipedia.org/w/api.php?format=json&origin=*&action=query";
 function stripHtml(h){ const d = document.createElement("div"); d.innerHTML = h || ""; return d.textContent.trim(); }
-async function getPhoto(title){
+// file：使う画像を決めて指定するとき（記事の代表画像が地図などのとき）。"-" は画像なし
+async function getPhoto(title, file){
   if (photoCache[title]) return photoCache[title];
   const r1 = await fetch(`${API}&redirects=1&prop=pageimages&piprop=thumbnail|name&pithumbsize=640&titles=${encodeURIComponent(title)}`).then(r=>r.json());
   const page = Object.values(r1.query.pages)[0];
   const info = { pageUrl:`https://ja.wikipedia.org/wiki/${encodeURIComponent(page.title || title)}` };
+  if (file === "-") { page.thumbnail = null; }
+  else if (file) {
+    const rf = await fetch(`${API}&prop=imageinfo&iiprop=url&iiurlwidth=640&titles=${encodeURIComponent("File:" + file)}`).then(r=>r.json());
+    const pf = Object.values(rf.query.pages)[0];
+    page.thumbnail = pf.imageinfo ? { source: pf.imageinfo[0].thumburl } : null;
+    page.pageimage = file;
+  }
   if (page.thumbnail) {
     info.src = page.thumbnail.source;
     try {
@@ -326,7 +334,7 @@ function navUrl(lat, lng){
   return "https://www.google.com/maps/dir/?api=1&destination=" + lat + "," + lng;
 }
 
-TEMPLES.forEach(([no, name, yomi, place, lat, lng, pt, wiki]) => {
+TEMPLES.forEach(([no, name, yomi, place, lat, lng, pt, wiki, file]) => {
   const el = document.createElement("div");
   el.className = "fuda";
   el.textContent = mark(no); el.title = `${label(no)} ${name}`;
@@ -364,7 +372,7 @@ TEMPLES.forEach(([no, name, yomi, place, lat, lng, pt, wiki]) => {
     if (loaded) return; loaded = true;
     const photo = box.querySelector(".photo"), credit = box.querySelector(".credit");
     try {
-      const p = await getPhoto(wiki);
+      const p = await getPhoto(wiki, file);
       if (p.src) {
         const img = new Image();
         img.src = p.src; img.alt = name;
