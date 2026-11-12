@@ -22,6 +22,7 @@
   #kiten { font-size:13px; color:var(--shu); font-weight:700; }
   .pop .yomi { font-size:12px; color:#666; margin-left:4px; }
   .pop .pt { font-size:12px; color:#555; margin-bottom:6px; }
+  #kaido { font-size:13px; color:var(--shu); border:1px solid var(--shu); border-radius:12px; padding:2px 6px; background:#fff; max-width:140px; }
   #toHenro { font-size:13px; color:var(--shu); text-decoration:none; border:1px solid var(--shu); border-radius:12px; padding:2px 10px; background:#fff; }
   .fuda.kiten { border-style:dashed; font-size:13px; }
   #bar select, #bar label { font-size:14px; }
@@ -118,7 +119,8 @@
   <select id="jump"><option value="">宿場を選んで移動…</option></select>
   <label><input type="checkbox" id="onlyNot"> 未訪問だけ表示</label>
   <button id="kirokuBtn">記録の受け渡し</button>
-  <span id="ver">Ver 1.0</span>
+  <select id="kaido" aria-label="街道を選ぶ"><option value="./" selected>東海道五十三次</option><option value="nakasendo.html">中山道六十九次</option></select>
+  <span id="ver">Ver 1.1</span>
 </div>
 <div id="notice"><div class="msg">⚠ 訪問の印は、この機器のこのブラウザだけに保存されます。<br>スマホとパソコン、ブラウザが違うと別々の記録になります。</div><button id="noticeClose" aria-label="閉じる">✕</button></div>
 <div id="map"></div>
@@ -216,6 +218,24 @@ const KEY = "shukuba_tokaido_visited";
 let visited = new Set();
 try { visited = new Set(JSON.parse(localStorage.getItem(KEY) || "[]")); } catch(e) {}
 function saveVisited(){ try { localStorage.setItem(KEY, JSON.stringify([...visited])); } catch(e) {} }
+const LINKS = {0:[["shukuba_nakasendo_visited",0]], 52:[["shukuba_nakasendo_visited",68]], 53:[["shukuba_nakasendo_visited",69]], 99:[["shukuba_nakasendo_visited",99]]};
+// ---- ほかの街道と共通の宿場（片方で印を付けると、もう片方にも付く） ----
+// LINKS[この街道の番号] = [[ほかの街道の保存名, その街道での番号], ...]
+function readSet(k){ try { return new Set(JSON.parse(localStorage.getItem(k) || "[]")); } catch(e) { return new Set(); } }
+function writeSet(k, s){ try { localStorage.setItem(k, JSON.stringify([...s])); } catch(e) {} }
+function syncIn(){
+  let changed = false;
+  Object.entries(LINKS).forEach(([no, list]) => {
+    no = Number(no);
+    if (!visited.has(no) && list.some(([k, o]) => readSet(k).has(o))) { visited.add(no); changed = true; }
+  });
+  if (changed) saveVisited();
+}
+function syncOut(no, on){
+  (LINKS[no] || []).forEach(([k, o]) => { const s = readSet(k); on ? s.add(o) : s.delete(o); writeSet(k, s); });
+}
+syncIn();
+
 function mainCount(){ return [...visited].filter(no => !isBangai(no)).length; }
 function updateCount(){
   const c = document.getElementById("count");
@@ -314,6 +334,7 @@ TEMPLES.forEach(([no, name, yomi, place, lat, lng, pt, wiki]) => {
   btn.onclick = () => {
     const before = mainCount();
     visited.has(no) ? visited.delete(no) : visited.add(no);
+    syncOut(no, visited.has(no));
     saveVisited(); updateCount(); paintBtn(); paintIcon(el, no); applyFilter();
     if (before < TOTAL && mainCount() === TOTAL) showKechigan();
   };
@@ -406,7 +427,7 @@ function decodeRecord(text){
 }
 function addRecord(set){
   const before = visited.size, beforeMain = mainCount();
-  set.forEach(no => visited.add(no));
+  set.forEach(no => { visited.add(no); syncOut(no, true); });
   saveVisited(); updateCount();
   Object.values(markers).forEach(k => k.refresh());
   applyFilter();
@@ -463,6 +484,8 @@ function alertBox(text){
   t.querySelector(".big").textContent = "㊞"; t.querySelector(".small").textContent = text;
   t.classList.add("show"); setTimeout(() => { t.classList.remove("show"); t.querySelector(".big").textContent = "踏破"; t.querySelector(".small").textContent = "東海道五十三次 すべての宿場を訪ねました"; }, 3000);
 }
+
+document.getElementById("kaido").onchange = e => { location.href = e.target.value + "?skip"; };
 
 // ---- オープニング ----
 (function(){
