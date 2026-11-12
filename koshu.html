@@ -32,6 +32,7 @@
   .fuda { width:28px; height:28px; border-radius:50%; background:#fff; border:2px solid var(--shu);
           color:var(--shu); font-size:12px; font-weight:700; line-height:28px; text-align:center;
           box-shadow:0 1px 3px rgba(0,0,0,.4); cursor:pointer; font-family:"Hiragino Sans","Meiryo",sans-serif; }
+  .fuda.meyasu { border-radius:5px; width:26px; height:26px; line-height:26px; }  /* 位置が目安の宿場は四角 */
   .fuda.visited { background:var(--shu); color:#fff; border-color:#fff; }
   .pop { width:260px; }
   .pop .no { color:var(--shu); font-size:13px; font-weight:700; }
@@ -120,9 +121,9 @@
   <label><input type="checkbox" id="onlyNot"> 未訪問だけ表示</label>
   <button id="kirokuBtn">記録の受け渡し</button>
   <select id="kaido" aria-label="街道を選ぶ"><option value="./">東海道五十三次</option><option value="nakasendo.html">中山道六十九次</option><option value="nikko.html">日光街道</option><option value="oshu.html">奥州街道</option><option value="koshu.html" selected>甲州街道</option></select>
-  <span id="ver">Ver 1.6</span>
+  <span id="ver">Ver 1.7</span>
 </div>
-<div id="notice"><div class="msg">⚠ 訪問の印は、この機器のこのブラウザだけに保存されます。<br>スマホとパソコン、ブラウザが違うと別々の記録になります。</div><button id="noticeClose" aria-label="閉じる">✕</button></div>
+<div id="notice"><div class="msg">⚠ 訪問の印は、この機器のこのブラウザだけに保存されます。<br>スマホとパソコン、ブラウザが違うと別々の記録になります。<br>四角の印は、位置が目安の宿場です。</div><button id="noticeClose" aria-label="閉じる">✕</button></div>
 <div id="map"></div>
 <div class="modal" id="kiroku"><div class="sheet">
   <button class="x" data-close aria-label="閉じる">✕</button>
@@ -315,12 +316,15 @@ TEMPLES.forEach(([no, name, yomi, place, lat, lng, pt, wiki, file]) => {
   el.className = "fuda";
   el.textContent = mark(no); el.title = `${label(no)} ${name}`;
   if (isBangai(no)) el.classList.add("kiten");
+  const meyasu = /あたり/.test(pt);   // 位置が目安（地名のあたり）の宿場
+  if (meyasu) el.classList.add("meyasu");
   paintIcon(el, no);
 
   const box = document.createElement("div");
   box.className = "pop";
   box.innerHTML = `<div class="no">${label(no)}</div><h2>${name}<span class="yomi">${yomi}</span></h2><div class="pref">${place}</div>
     ${pt ? `<div class="pt">地図の印：${pt}</div>` : ""}
+    ${meyasu ? `<div class="navnote" style="margin:-4px 0 6px">※この宿場は本陣跡などの正確な位置が確かめられていないため、地名のおおよその位置に印を置いています（四角の印）。実際の宿場の場所と数百mずれることがあります。道順もこの位置までの案内になります。</div>` : ""}
     <div class="photo">画像を読み込み中…</div><div class="credit"></div><button></button>
     <a class="nav" target="_blank" rel="noopener">現在地からの道順（グーグルマップ）</a>
     <div class="navnote">道順はグーグルマップで表示します。グーグルマップの仕様変更などにより、行き先や道順が実際と異なる場合があります。運転中の操作はおやめください。Google マップは Google LLC の商標です。</div>`;
@@ -369,7 +373,7 @@ TEMPLES.forEach(([no, name, yomi, place, lat, lng, pt, wiki, file]) => {
   m.addTo(map);
   markers[no] = { m, popup, shown: true, refresh(){ paintBtn(); paintIcon(el, no); } };
   const opt = document.createElement("option");
-  opt.value = no; opt.textContent = `${isBangai(no) ? label(no) : no + "."} ${name}（${place.replace(/^.+?[都道府県]/,"")}）`;
+  opt.value = no; opt.textContent = `${isBangai(no) ? label(no) : no + "."} ${name}（${place.replace(/^.+?[都道府県]/,"")}）${meyasu ? "（位置は目安）" : ""}`;
   groups.find(x => x.test(no)).g.appendChild(opt);
 });
 
