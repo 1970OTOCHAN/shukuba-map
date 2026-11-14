@@ -133,7 +133,7 @@
   <label><input type="checkbox" id="onlyNot"> 未訪問だけ表示</label>
   <button id="kirokuBtn">記録の受け渡し</button>
   <select id="kaido" aria-label="街道を選ぶ"><option value="./">東海道五十三次</option><option value="nakasendo.html">中山道六十九次</option><option value="nikko.html">日光街道</option><option value="oshu.html">奥州街道</option><option value="koshu.html" selected>甲州街道</option></select>
-  <span id="ver">Ver 2.0</span>
+  <span id="ver">Ver 2.1</span>
 </div>
 <div id="notice"><div class="msg">⚠ 訪問の印は、この機器のこのブラウザだけに保存されます。<br>スマホとパソコン、ブラウザが違うと別々の記録になります。<br>黄色い三角の印は、位置が目安の宿場です。</div><button id="noticeClose" aria-label="閉じる">✕</button></div>
 <div id="map"></div>
@@ -516,6 +516,6 @@ document.getElementById("kaido").onchange = e => { location.href = e.target.valu
 })();
 </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "e75f1ba2a4504431bdc7f3ccb9d2206a"}'></script><!-- End Cloudflare Web Analytics -->
-<script>if('serviceWorker' in navigator){addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
+<script>/* 開くたびに最新版を確認し、新しい版が届いたら1回だけ自動で読み込み直す */if('serviceWorker' in navigator){addEventListener('load',function(){var had=!!navigator.serviceWorker.controller,done=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(had&&!done){done=true;location.reload();}});navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(r){r.update().catch(function(){});document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')r.update().catch(function(){});});}).catch(function(){});});}</script>
 </body>
 </html>
