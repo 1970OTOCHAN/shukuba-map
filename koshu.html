@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>宿場町巡礼マップ（甲州街道）</title>
+<title>五街道宿場町巡礼マップ（甲州街道）</title>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"></script>
@@ -94,7 +94,7 @@
   #opening.go .a { opacity:1; transform:none; }
   #opening.go .d2 { transition-delay:.5s; } #opening.go .d3 { transition-delay:.8s; } #opening.go .d4 { transition-delay:1.1s; }
   #opening .logo { width:200px; height:200px; max-width:60vw; max-height:60vw; display:block; }
-  #opening .t1 { font-family:"Yuji Syuku",serif; color:#fff; font-size:30px; margin-top:18px; }
+  #opening .t1 { font-family:"Yuji Syuku",serif; color:#fff; font-size:min(30px, 7.4vw); white-space:nowrap; margin-top:18px; }
   #opening .t2 { font-family:"Yuji Syuku",serif; color:#f2cf6b; font-size:17px; margin-top:8px; }
   #opening .t3 { color:#b9c0c4; font-size:13px; margin-top:24px; }
   #opening .t4 { color:#8f989d; font-size:13px; margin-top:10px; line-height:1.6; }
@@ -119,7 +119,7 @@
     <path d="M98 92 c-6 0 -10 4 -10 9 c0 7 10 16 10 16 s10 -9 10 -16 c0 -5 -4 -9 -10 -9 z" fill="#c8372d" stroke="#faf7f0" stroke-width="2"/>
     <circle cx="98" cy="101" r="3.5" fill="#faf7f0"/>
   </svg></div>
-  <div class="a d2 t1">宿場町巡礼マップ</div>
+  <div class="a d2 t1">五街道宿場町巡礼マップ</div>
   <div class="a d3 t2">甲州街道 ― 国土地理院の地図で、宿場町をめぐる</div>
   <div class="a d4 t3">© 2026 1970 OTOCHAN. All rights reserved.</div>
   <div class="a d4 t4">アプリそのものの無断での再配布・改変・販売はご遠慮ください。スクリーンショットやリンクでの紹介は自由です。</div>
@@ -133,7 +133,7 @@
   <label><input type="checkbox" id="onlyNot"> 未訪問だけ表示</label>
   <button id="kirokuBtn">記録の受け渡し</button>
   <select id="kaido" aria-label="街道を選ぶ"><option value="./">東海道五十三次</option><option value="nakasendo.html">中山道六十九次</option><option value="nikko.html">日光街道</option><option value="oshu.html">奥州街道</option><option value="koshu.html" selected>甲州街道</option></select>
-  <span id="ver">Ver 2.1</span>
+  <span id="ver">Ver 2.2</span>
 </div>
 <div id="notice"><div class="msg">⚠ 訪問の印は、この機器のこのブラウザだけに保存されます。<br>スマホとパソコン、ブラウザが違うと別々の記録になります。<br>黄色い三角の印は、位置が目安の宿場です。</div><button id="noticeClose" aria-label="閉じる">✕</button></div>
 <div id="map"></div>
